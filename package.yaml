@@ -23,6 +23,9 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - bytestring
+- brick
+- vty
+- cursor
 
 library:
   source-dirs: src
