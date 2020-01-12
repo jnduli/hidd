@@ -68,7 +68,10 @@ tui = do
              initialState <- buildInitialState a
              endState <- defaultMain tuiApp initialState
              print endState
-           UrlFlag a -> die "Url not supported yet"
+           UrlFlag a -> do
+             initialState <- buildInitialUrlState a
+             endState <- defaultMain tuiApp initialState
+             print endState
 
 data TuiState =
   TuiState
@@ -89,6 +92,16 @@ tuiApp =
     , appStartEvent = pure
     , appAttrMap = const $ attrMap mempty [("selected", fg red)]
     }
+
+buildInitialUrlState :: String -> IO TuiState
+buildInitialUrlState u = do
+  issues <- getJSONFromUrl u
+  case issues of
+    Nothing -> die "Problem with json from url"
+    Just is ->
+      case NE.nonEmpty $ catMaybes is of
+        Nothing -> die "There are no contents"
+        Just ne -> pure TuiState {tuiStateIssues = makeNonEmptyCursor ne}
 
 buildInitialState :: String -> IO TuiState
 buildInitialState f = do

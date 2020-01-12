@@ -26,6 +26,9 @@ dependencies:
 - brick
 - vty
 - cursor
+- http-conduit
+- http-client-tls
+- http-client
 
 library:
   source-dirs: src

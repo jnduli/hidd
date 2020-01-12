@@ -6,6 +6,9 @@ module Issues where
 import Data.Aeson (FromJSON, ToJSON, Value, decode, encode)
 import qualified Data.ByteString.Lazy as B
 import GHC.Generics
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import Network.HTTP.Simple
 import System.IO
 
 data User =
@@ -34,6 +37,16 @@ getJSONFromFile :: String -> IO (Maybe [Maybe GithubIssue])
 getJSONFromFile f = do
   content <- B.readFile f
   return (decode content :: Maybe [Maybe GithubIssue])
+
+getJSONFromUrl :: String -> IO (Maybe [Maybe GithubIssue])
+getJSONFromUrl u = do
+  manager <- newManager tlsManagerSettings
+  urlRequest <- parseRequest u
+  let request =
+        addRequestHeader "User-Agent" "Haskell" $
+        setRequestManager manager urlRequest
+  response <- httpJSON request
+  return (getResponseBody response :: Maybe [Maybe GithubIssue])
 
 displayGithubIssue :: GithubIssue -> IO ()
 displayGithubIssue x = print (show (number x) ++ " " ++ title x)
