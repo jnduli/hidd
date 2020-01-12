@@ -4,10 +4,11 @@ module Tui where
 
 import Brick
 import Brick.AttrMap
-import Brick.Types (BrickEvent(VtyEvent))
+import Brick.Main (ViewportScroll, vScrollBy)
+import Brick.Types (BrickEvent(VtyEvent), ViewportType(Vertical))
 import Brick.Util (fg)
 import Brick.Widgets.Border (border)
-import Brick.Widgets.Core (str, vBox, withAttr)
+import Brick.Widgets.Core (str, vBox, viewport, withAttr)
 import Cursor.Simple.List.NonEmpty
   ( NonEmptyCursor
   , makeNonEmptyCursor
@@ -28,23 +29,23 @@ import System.Environment (getArgs)
 import System.Exit (die)
 
 data Flag
-  = File String
-  | Url String
+  = FileFlag String
+  | UrlFlag String
   | Help
   deriving (Show, Eq)
 
 options :: [OptDescr Flag]
 options =
-  [ Option ['f'] ["file"] (ReqArg File "FILE") "input FILE"
+  [ Option ['f'] ["file"] (ReqArg FileFlag "FILE") "input FILE"
   , Option ['u'] ["url"] (OptArg defaultString "URL") "url for issues"
   , Option ['h', '?'] ["help"] (NoArg Help) "help details"
   ]
 
-defaultFile :: Maybe String -> Flag
-defaultFile = File . fromMaybe ""
+defaultFileFlag :: Maybe String -> Flag
+defaultFileFlag = FileFlag . fromMaybe ""
 
 defaultString :: Maybe String -> Flag
-defaultString = Url . fromMaybe ""
+defaultString = UrlFlag . fromMaybe ""
 
 compilerOpts :: [String] -> IO ([Flag], [String])
 compilerOpts argv =
@@ -63,11 +64,11 @@ tui = do
   if Help `elem` actions
     then die $ usageInfo "Usage: hidd [OPTION...] " options
     else case head actions of
-           File a -> do
+           FileFlag a -> do
              initialState <- buildInitialState a
              endState <- defaultMain tuiApp initialState
              print endState
-           Url a -> die "Url not supported yet"
+           UrlFlag a -> die "Url not supported yet"
 
 data TuiState =
   TuiState
@@ -75,7 +76,9 @@ data TuiState =
     }
   deriving (Show)
 
-type ResourceName = String
+data ResourceName =
+  IssuesList
+  deriving (Ord, Show, Eq)
 
 tuiApp :: App TuiState e ResourceName
 tuiApp =
@@ -101,6 +104,7 @@ drawTui :: TuiState -> [Widget ResourceName]
 drawTui ts =
   let nec = tuiStateIssues ts
    in [ border $
+        viewport IssuesList Vertical $
         vBox $
         concat
           [ map (drawPath False) $ reverse $ nonEmptyCursorPrev nec
@@ -118,7 +122,10 @@ drawPath b issue =
   str $
   (show (number issue) ++ " " ++ title issue)
 
-handleTuiEvent :: TuiState -> BrickEvent n e -> EventM n (Next TuiState)
+handleTuiEvent ::
+     TuiState
+  -> BrickEvent ResourceName e
+  -> EventM ResourceName (Next TuiState)
 handleTuiEvent s e =
   case e of
     VtyEvent vtye ->
@@ -127,10 +134,17 @@ handleTuiEvent s e =
         EvKey KDown [] -> do
           case nonEmptyCursorSelectNext $ tuiStateIssues s of
             Nothing -> continue s
-            Just nec -> continue $ s {tuiStateIssues = nec}
+            Just nec -> do
+              let vp1Scroll = viewportScroll IssuesList
+              vScrollBy vp1Scroll 1
+              continue $ s {tuiStateIssues = nec}
+              -- scroll <- vScrollBy vp1Scroll 1 -- >> continue $ s {tuiStateIssues = nec}
         EvKey KUp [] -> do
           case nonEmptyCursorSelectPrev $ tuiStateIssues s of
             Nothing -> continue s
-            Just nec -> continue $ s {tuiStateIssues = nec}
+            Just nec -> do
+              let vp1Scroll = viewportScroll IssuesList
+              vScrollBy vp1Scroll (-1)
+              continue $ s {tuiStateIssues = nec}
         _ -> continue s
     _ -> continue s
