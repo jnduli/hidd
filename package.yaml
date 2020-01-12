@@ -29,6 +29,7 @@ dependencies:
 - http-conduit
 - http-client-tls
 - http-client
+- process
 
 library:
   source-dirs: src
