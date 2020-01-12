@@ -19,16 +19,55 @@ import Cursor.Simple.List.NonEmpty
   )
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (catMaybes)
+import Data.Maybe
 import Graphics.Vty.Attributes
 import Graphics.Vty.Input.Events (Event(EvKey), Key(KChar, KDown, KUp))
 import Issues
+import System.Console.GetOpt
+import System.Environment (getArgs)
 import System.Exit (die)
+
+data Flag
+  = File String
+  | Url String
+  | Help
+  deriving (Show, Eq)
+
+options :: [OptDescr Flag]
+options =
+  [ Option ['f'] ["file"] (ReqArg File "FILE") "input FILE"
+  , Option ['u'] ["url"] (OptArg defaultString "URL") "url for issues"
+  , Option ['h', '?'] ["help"] (NoArg Help) "help details"
+  ]
+
+defaultFile :: Maybe String -> Flag
+defaultFile = File . fromMaybe ""
+
+defaultString :: Maybe String -> Flag
+defaultString = Url . fromMaybe ""
+
+compilerOpts :: [String] -> IO ([Flag], [String])
+compilerOpts argv =
+  case getOpt Permute options argv of
+    (o, n, []) -> return (o, n)
+    (_, _, errs) ->
+      ioError (userError (concat errs ++ usageInfo header options))
+  where
+    header = "Usage: ic [OPTION...] files..."
 
 tui :: IO ()
 tui = do
-  initialState <- buildInitialState
-  endState <- defaultMain tuiApp initialState
-  print endState
+  args <- getArgs
+  (actions, nonOptions) <- compilerOpts args
+  -- If theres help in actions, then print usage and die
+  if Help `elem` actions
+    then die $ usageInfo "Usage: hidd [OPTION...] " options
+    else case head actions of
+           File a -> do
+             initialState <- buildInitialState a
+             endState <- defaultMain tuiApp initialState
+             print endState
+           Url a -> die "Url not supported yet"
 
 data TuiState =
   TuiState
@@ -48,9 +87,9 @@ tuiApp =
     , appAttrMap = const $ attrMap mempty [("selected", fg red)]
     }
 
-buildInitialState :: IO TuiState
-buildInitialState = do
-  issues <- getJSONFromFile "github.json"
+buildInitialState :: String -> IO TuiState
+buildInitialState f = do
+  issues <- getJSONFromFile f
   case issues of
     Nothing -> die "There are no contents"
     Just is ->
