@@ -124,7 +124,7 @@ urlTui a = do
 
 data TuiState =
   TuiState
-    { tuiStateIssues :: NonEmptyCursor GithubIssue
+    { tuiStateIssues :: NonEmptyCursor Issue
     }
   deriving (Show)
 
@@ -176,13 +176,13 @@ drawTui ts =
       ]
 
 -- drawTui ts = [vBox $ map str $ tuiStateIssues ts]
-drawPath :: Bool -> GithubIssue -> Widget n
+drawPath :: Bool -> Issue -> Widget n
 drawPath b issue =
   (if b
      then withAttr "selected"
      else id) .
   str $
-  (show (number issue) ++ " " ++ title issue)
+  issueSummary issue
 
 handleTuiEvent ::
      TuiState
