@@ -48,7 +48,34 @@ getUrlFromGitRepository = do
   let url = head . tail . words $ head $ lines remote
   case "github" `isInfixOf` url of
     True -> return $ AutoUrl $ formGithubUrl url
-    False -> return Fail
+    False ->
+      case "gitlab" `isInfixOf` url of
+        True -> return $ AutoUrl $ formGitlabUrl url
+        False -> return Fail
+
+gitlabIssuesUrlPrefix = "https://gitlab.com/api/v4/projects/"
+
+-- /commento%2Fcommento/issues?state=opened
+formGitlabUrl :: String -> String
+formGitlabUrl ('g':'i':'t':rest) =
+  gitlabIssuesUrlPrefix ++
+  (replaceBackSlash . giturl) rest ++ "/issues?state=opened"
+formGitlabUrl ('h':'t':'t':'p':rest) =
+  gitlabIssuesUrlPrefix ++
+  (replaceBackSlash . httpurl) rest ++ "/issues?state=opened"
+
+replaceBackSlash :: String -> String
+replaceBackSlash ('/':xs) = "%2F" ++ xs
+replaceBackSlash (x:xs) = x : replaceBackSlash xs
+
+-- assumes url is of form 'git@github.com:user/repo.git' or 'git@gitlab.com:user/repo.git`
+giturl :: String -> String
+giturl (':':xs) = removeGitSuffix xs
+giturl (x:xs) = giturl xs
+
+-- assumes url is of form 'https://github.com/user/repo.git
+httpurl ('m':'/':xs) = removeGitSuffix xs
+httpurl (x:xs) = httpurl xs
 
 -- /repos/:owner/:repo/issues
 -- https://api.github.com/repos/vmg/redcarpet/issues
@@ -58,16 +85,8 @@ githubIssuesUrlPrefix = "https://api.github.com/repos/" -- vmg/redcarpet/issues
 formGithubUrl :: String -> String
 formGithubUrl ('g':'i':'t':rest) =
   githubIssuesUrlPrefix ++ giturl rest ++ "/issues"
-    -- assumes url is of form 'git@github.com:user/repo.git
-  where
-    giturl (':':xs) = removeGitSuffix xs
-    giturl (x:xs) = giturl xs
 formGithubUrl ('h':'t':'t':'p':rest) =
   githubIssuesUrlPrefix ++ httpurl rest ++ "/issues"
-    -- assumes url is of form 'https://github.com/user/repo.git
-  where
-    httpurl ('m':'/':xs) = removeGitSuffix xs
-    httpurl (x:xs) = httpurl xs
 
 removeGitSuffix :: String -> String
 removeGitSuffix xs
