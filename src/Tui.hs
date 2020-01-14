@@ -9,6 +9,7 @@ import Brick.Types (BrickEvent(VtyEvent), ViewportType(Vertical))
 import Brick.Util (fg)
 import Brick.Widgets.Border (border)
 import Brick.Widgets.Core (str, vBox, viewport, withAttr)
+import Config
 import Cursor.Simple.List.NonEmpty
   ( NonEmptyCursor
   , makeNonEmptyCursor
@@ -50,8 +51,12 @@ getUrlFromGitRepository = do
     True -> return $ AutoUrl $ formGithubUrl url
     False ->
       case "gitlab" `isInfixOf` url of
-        True -> return $ AutoUrl $ formGitlabUrl url
-        False -> return Fail
+        True -> do
+          gitKey <- getGitlabKey
+          case gitKey of
+            Just a ->
+              return $ AutoUrl $ formGitlabUrl url ++ "&private_token=" ++ a
+            Nothing -> return Fail
 
 gitlabIssuesUrlPrefix = "https://gitlab.com/api/v4/projects/"
 
