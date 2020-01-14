@@ -30,6 +30,7 @@ dependencies:
 - http-client-tls
 - http-client
 - process
+- unordered-containers
 
 library:
   source-dirs: src
