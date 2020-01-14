@@ -55,7 +55,6 @@ getUrlFromGitRepository = do
 
 gitlabIssuesUrlPrefix = "https://gitlab.com/api/v4/projects/"
 
--- /commento%2Fcommento/issues?state=opened
 formGitlabUrl :: String -> String
 formGitlabUrl ('g':'i':'t':rest) =
   gitlabIssuesUrlPrefix ++
@@ -64,6 +63,8 @@ formGitlabUrl ('h':'t':'t':'p':rest) =
   gitlabIssuesUrlPrefix ++
   (replaceBackSlash . httpurl) rest ++ "/issues?state=opened"
 
+-- replaces the '/' in the gitlab path with '%2F
+-- this is a temporary soluntion to how to access the gitlab project
 replaceBackSlash :: String -> String
 replaceBackSlash ('/':xs) = "%2F" ++ xs
 replaceBackSlash (x:xs) = x : replaceBackSlash xs
