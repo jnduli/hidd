@@ -38,3 +38,13 @@ cp .stack-work/dist/x86_64-linux-tinfo6/Cabal-2.4.0.1/build/hidd-exe
   the repo)
 - hidd-exe -h (shows basic usage)
 
+## Auth
+
+To access private gitlab tokens, hidd uses [gitlab personal access
+tokens](https://docs.gitlab.com/ee/api/README.html#personal-access-tokens).
+The token is set in a config file with the path 
+`~/.config/hidd/hiddrc`. An example config file is 
+
+```
+gitlab-private-key = "key"
+```
