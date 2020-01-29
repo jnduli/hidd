@@ -218,20 +218,23 @@ handleTuiEvent s e =
     VtyEvent vtye ->
       case vtye of
         EvKey (KChar 'q') [] -> halt s
-        EvKey KDown [] -> do
-          case nonEmptyCursorSelectNext $ tuiStateIssues s of
-            Nothing -> continue s
-            Just nec -> do
-              let vp1Scroll = viewportScroll IssuesList
-              vScrollBy vp1Scroll 1
-              continue $ s {tuiStateIssues = nec}
-              -- scroll <- vScrollBy vp1Scroll 1 -- >> continue $ s {tuiStateIssues = nec}
-        EvKey KUp [] -> do
-          case nonEmptyCursorSelectPrev $ tuiStateIssues s of
-            Nothing -> continue s
-            Just nec -> do
-              let vp1Scroll = viewportScroll IssuesList
-              vScrollBy vp1Scroll (-1)
-              continue $ s {tuiStateIssues = nec}
+        EvKey KDown [] -> goDown
+        EvKey (KChar 'j') [] -> goDown
+        EvKey KUp [] -> goUp
+        EvKey (KChar 'k') [] -> goUp
         _ -> continue s
+      where goDown = do
+              case nonEmptyCursorSelectNext $ tuiStateIssues s of
+                Nothing -> continue s
+                Just nec -> do
+                  let vp1Scroll = viewportScroll IssuesList
+                  vScrollBy vp1Scroll 1
+                  continue $ s {tuiStateIssues = nec}
+            goUp = do
+              case nonEmptyCursorSelectPrev $ tuiStateIssues s of
+                Nothing -> continue s
+                Just nec -> do
+                  let vp1Scroll = viewportScroll IssuesList
+                  vScrollBy vp1Scroll (-1)
+                  continue $ s {tuiStateIssues = nec}
     _ -> continue s
