@@ -98,3 +98,9 @@ getJSONFromUrl u = do
 issueSummary :: Issue -> String
 issueSummary (GitlabIssue title iid _ _ _ _) = show iid ++ " " ++ title
 issueSummary (GithubIssue _ number title _ _ _ _) = show number ++ " " ++ title
+
+issueDetails :: Issue -> String
+issueDetails (GitlabIssue title iid description author created_at body) =
+  show iid ++ "\n" ++ title ++ "\n" ++ description
+issueDetails (GithubIssue _ number title user state created_at body) =
+  show number ++ "\n" ++ title ++ "\n" ++ body

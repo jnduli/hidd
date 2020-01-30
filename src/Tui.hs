@@ -7,8 +7,8 @@ import Brick.AttrMap
 import Brick.Main (ViewportScroll, vScrollBy)
 import Brick.Types (BrickEvent(VtyEvent), ViewportType(Vertical))
 import Brick.Util (fg)
-import Brick.Widgets.Border (border)
-import Brick.Widgets.Core (str, vBox, viewport, withAttr)
+import Brick.Widgets.Border (border, vBorder)
+import Brick.Widgets.Core (hBox, str, strWrap, vBox, viewport, withAttr)
 import Config
 import Cursor.Simple.List.NonEmpty
   ( NonEmptyCursor
@@ -153,8 +153,9 @@ data TuiState =
     }
   deriving (Show)
 
-data ResourceName =
-  IssuesList
+data ResourceName
+  = IssuesList
+  | IssuesDescription
   deriving (Ord, Show, Eq)
 
 tuiApp :: App TuiState e ResourceName
@@ -191,14 +192,28 @@ drawTui :: TuiState -> [Widget ResourceName]
 drawTui ts =
   let nec = tuiStateIssues ts
    in [ border $
-        viewport IssuesList Vertical $
-        vBox $
-        concat
-          [ map (drawPath False) $ reverse $ nonEmptyCursorPrev nec
-          , [drawPath True $ nonEmptyCursorCurrent nec]
-          , map (drawPath False) $ nonEmptyCursorNext nec
+        hBox
+          [ issuesList nec IssuesList
+          , vBorder
+          , issuesDetails nec IssuesDescription
           ]
       ]
+  where
+    issuesList nec resourceName =
+      vBox
+        [ viewport resourceName Vertical $
+          vBox $
+          concat
+            [ map (drawPath False) $ reverse $ nonEmptyCursorPrev nec
+            , [drawPath True $ nonEmptyCursorCurrent nec]
+            , map (drawPath False) $ nonEmptyCursorNext nec
+            ]
+        ]
+    issuesDetails nec resourceName =
+      vBox
+        [ viewport resourceName Vertical $
+          vBox $ [drawDetails $ nonEmptyCursorCurrent nec]
+        ]
 
 -- drawTui ts = [vBox $ map str $ tuiStateIssues ts]
 drawPath :: Bool -> Issue -> Widget n
@@ -206,8 +221,11 @@ drawPath b issue =
   (if b
      then withAttr "selected"
      else id) .
-  str $
+  strWrap $
   issueSummary issue
+
+drawDetails :: Issue -> Widget n
+drawDetails issue = strWrap $ issueDetails issue
 
 handleTuiEvent ::
      TuiState
